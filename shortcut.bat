@@ -12,7 +12,6 @@ rem get the first match (comment out goto FOUND to get the last match)
 for /f "delims=" %%a in ('dir "%~d0\%filename%" /s /b') do (
     set "name=%%a"
     if defined name (
-        echo %name% inside for loop
         goto FOUND
     )
 )
