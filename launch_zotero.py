@@ -18,6 +18,7 @@ import os
 import subprocess
 import time
 import json
+import traceback
 
 SETTINGS_FILENAME = 'launch_zotero_settings.json'
 
@@ -27,11 +28,20 @@ DEFAULTS = {'zotero_folder': 'ZoteroStandalonePortable',
             'profile_name': 'profile'
             }
 
-def find_dir(name, path):
+def find_dir(name, path, full_search=True):
     # https://stackoverflow.com/questions/1724693/find-a-file-in-python
-    for root, dirs, files in os.walk(path):
-        if name in dirs:
-            return os.path.join(root, name)
+
+    def fdir(name, start):
+        for root, dirs, files in os.walk(start): 
+            if name in dirs:
+                return os.path.join(root, name)
+        
+    found = fdir(name, path)  # first look in current dir
+    if not found and full_search:  # if not found then try looking in the whole drive
+        drive = os.path.splitdrive(os.getcwd())[0] + "\\"
+        print(f'{name} not found in {path}. Searching through the rest of {drive}...')
+        found = fdir(name, drive)
+    return found
 
 
 def set_settings(sett):
@@ -55,6 +65,7 @@ def main():
     sett = get_settings()
     try:
         lib_dir = find_dir(sett['library_name'], os.getcwd()).replace("\\", "\\\\")
+
         print('Zotero library directory:', lib_dir)
         zotero_dir = find_dir(sett['zotero_folder'], os.getcwd()) # find paths to zotero folder
         # get filepath to user.js within the profile folder inside the data folder of zotero
@@ -67,7 +78,8 @@ def main():
         print('All done!')
         time.sleep(3)
     except Exception as e:
-        print('Something went wrong:', e)
+        print('Something went wrong:')
+        traceback.print_exc()
         print('There might be something wrong with the settings.')
         print('Try editing the file', SETTINGS_FILENAME)
         print('It should look something like this:', os.linesep, json.dumps(DEFAULTS, indent=4))
